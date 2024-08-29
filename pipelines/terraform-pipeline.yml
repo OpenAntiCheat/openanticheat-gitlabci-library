@@ -1,0 +1,53 @@
+image: hashicorp/terraform:latest
+
+stages:
+  - terraform
+
+variables:
+  GITLAB_BASE_URL: "https://git.tech.theverygroup.com"
+  MAIN_BRANCH: 'master'
+  REGION: 'eu-west-1'
+  TERRAFORM_DIRECTORY: 'terraform'
+  TERRAFORM_LOCK_TIMEOUT: '5m'
+
+.before_script:
+  - cd $TERRAFORM_DIRECTORY
+
+terraform-init:
+  stage: terraform
+  script:
+    - terraform init
+
+terraform-validate:
+  stage: terraform
+  script:
+    - terraform validate
+
+terraform-lint:
+  stage: terraform
+  script:
+    - tflint --init
+    - tflint -f=checkstyle > tflint-report.xml
+  artifacts:
+    reports:
+      codequality: tflint-report.xml
+    paths:
+      - tflint-report.xml
+
+terraform-plan:
+  stage: terraform
+  script:
+    - terraform workspace select ${CI_ENVIRONMENT_NAME} || terraform workspace new ${CI_ENVIRONMENT_NAME}
+    - terraform plan -no-color -lock-timeout=$TERRAFORM_LOCK_TIMEOUT -var-file=environments/${CI_ENVIRONMENT_NAME}.tfvars -out=${CI_ENVIRONMENT_NAME}-tfplan
+    - cat ${CI_ENVIRONMENT_NAME}-tfplan.txt
+  artifacts:
+    paths:
+      - ${CI_ENVIRONMENT_NAME}-tfplan.txt
+
+terraform-apply:
+  stage: terraform
+  script:
+    - terraform apply -no-color -lock-timeout=$TERRAFORM_LOCK_TIMEOUT -auto-approve ${CI_ENVIRONMENT_NAME}-tfplan
+  when: manual
+  only:
+    - master
