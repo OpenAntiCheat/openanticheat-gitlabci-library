@@ -1,4 +1,5 @@
 image: hashicorp/terraform:latest
+entrypoint: [""]
 
 stages:
   - terraform
