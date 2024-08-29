@@ -4,11 +4,15 @@ stages:
   - terraform
 
 variables:
-  GITLAB_BASE_URL: "https://git.tech.theverygroup.com"
   MAIN_BRANCH: 'master'
   REGION: 'eu-west-1'
   TERRAFORM_DIRECTORY: 'terraform'
   TERRAFORM_LOCK_TIMEOUT: '5m'
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH # Run pipeline for any branch
+    - if: $CI_COMMIT_TAG # Optional: Run for tags as well
 
 .before_script:
   - cd $TERRAFORM_DIRECTORY
@@ -47,7 +51,3 @@ terraform-plan:
 terraform-apply:
   stage: terraform
   script:
-    - terraform apply -no-color -lock-timeout=$TERRAFORM_LOCK_TIMEOUT -auto-approve ${CI_ENVIRONMENT_NAME}-tfplan
-  when: manual
-  only:
-    - master
