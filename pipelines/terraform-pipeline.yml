@@ -8,7 +8,7 @@ stages:
 variables:
   MAIN_BRANCH: 'master'
   REGION: 'eu-west-1'
-  TERRAFORM_DIRECTORY: 'terraform'
+  TERRAFORM_DIRECTORY: 'infrastructure'
   TERRAFORM_LOCK_TIMEOUT: '5m'
 
 workflow:
