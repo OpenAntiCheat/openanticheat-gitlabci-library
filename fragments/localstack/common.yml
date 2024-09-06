@@ -44,10 +44,11 @@
     - tflocal apply -auto-approve
   when:
     manual
-    
+
 .localstack_destroy:
   extends: .backend_init
   script:
     - tflocal destroy -auto-approve
   when:
     manual
+    
