@@ -1,0 +1,54 @@
+.backend_init:
+  before_script:
+    # Update and install dependencies
+    - apt-get update
+    - apt-get install -y git curl unzip
+
+    # Install tfenv
+    - git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+    - ln -s ~/.tfenv/bin/* /usr/local/bin
+
+    # Install a specific version of Terraform using tfenv
+    - tfenv install $TF_VERSION
+    - tfenv use $TF_VERSION
+
+    # Install pip and tflocal
+    - pip install --upgrade pip
+    - pip install terraform-local
+    - pip install --upgrade terraform-local
+
+    # Change directory to Terraform directory
+    - cd $TERRAFORM_DIRECTORY
+
+    # Initialize Terraform with tflocal and backend configurations
+    - |
+      tflocal init \
+        -backend-config=address=${TF_ADDRESS} \
+        -backend-config=lock_address=${TF_ADDRESS}/lock \
+        -backend-config=unlock_address=${TF_ADDRESS}/lock \
+        -backend-config=username=${TF_USERNAME} \
+        -backend-config=password=${TF_PASSWORD} \
+        -backend-config=lock_method=POST \
+        -backend-config=unlock_method=DELETE \
+        -backend-config=retry_wait_min=5
+
+.localstack_plan:
+  extends: .backend_init
+  script:
+    - tflocal plan
+
+.localstack_apply:
+  extends: .backend_init
+  script:
+    - tflocal plan
+    - tflocal apply -auto-approve
+  when:
+    manual
+
+.localstack_destroy:
+  extends: .backend_init
+  script:
+    - tflocal destroy -auto-approve
+  when:
+    manual
+    

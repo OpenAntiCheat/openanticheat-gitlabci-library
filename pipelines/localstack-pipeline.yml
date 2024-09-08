@@ -1,0 +1,43 @@
+include:
+  - local:  /fragments/localstack/common.yml
+
+image: python:3.10
+
+default:
+  tags:
+    - homelab
+
+stages:
+  - terraform
+
+variables:
+  TERRAFORM_DIRECTORY: infrastructure
+  TF_PASSWORD: $STATE_MANAGEMENT_PASSWORD   
+  TF_ADDRESS: '${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/tfstate'
+  TF_USERNAME: $STATE_MANAGEMENT_USER
+  TF_VERSION: 1.4.0
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH 
+    - if: $CI_COMMIT_TAG 
+    - if: $CI_PIPELINE_SOURCE -- "merge_request_event"
+
+localstack_plan:
+  stage: terraform
+  extends:
+    - .localstack_plan:
+
+
+localstack_apply:
+  stage: terraform
+  extends:
+    - .localstack_apply:
+
+
+localstack_destroy:
+  stage: terraform
+  extends:
+    - .localstack_destroy:
+
+

@@ -1,0 +1,57 @@
+image: 
+  name: hashicorp/terraform:latest
+  entrypoint: [""]
+
+stages:
+  - terraform
+
+variables:
+  MAIN_BRANCH: 'master'
+  REGION: 'eu-west-1'
+  TERRAFORM_DIRECTORY: 'infrastructure'
+  TERRAFORM_LOCK_TIMEOUT: '5m'
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH # Run pipeline for any branch
+    - if: $CI_COMMIT_TAG # Optional: Run for tags as well
+
+.before_script:
+  - cd $TERRAFORM_DIRECTORY
+
+terraform-init:
+  stage: terraform
+  script:
+    - terraform init
+
+terraform-validate:
+  stage: terraform
+  script:
+    - terraform validate
+
+terraform-lint:
+  stage: terraform
+  script:
+    - tflint --init
+    - tflint -f=checkstyle > tflint-report.xml
+  artifacts:
+    reports:
+      codequality: tflint-report.xml
+    paths:
+      - tflint-report.xml
+
+terraform-plan:
+  stage: terraform
+  script:
+    - terraform workspace select ${CI_ENVIRONMENT_NAME} || terraform workspace new ${CI_ENVIRONMENT_NAME}
+    - terraform plan -no-color -lock-timeout=$TERRAFORM_LOCK_TIMEOUT -var-file=environments/${CI_ENVIRONMENT_NAME}.tfvars -out=${CI_ENVIRONMENT_NAME}-tfplan
+    - cat ${CI_ENVIRONMENT_NAME}-tfplan.txt
+  artifacts:
+    paths:
+      - ${CI_ENVIRONMENT_NAME}-tfplan.txt
+
+terraform-apply:
+  stage: terraform
+  script:
+    - terraform apply -no-color -lock-timeout=$TERRAFORM_LOCK_TIMEOUT -auto-approve ${CI_ENVIRONMENT_NAME}-tfplan
+  when: manual
